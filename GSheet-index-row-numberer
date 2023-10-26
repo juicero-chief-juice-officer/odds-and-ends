@@ -1,0 +1,65 @@
+// Google Sheets Script to set an index and a row number when inserting new rows.
+// To set up, you'll need a blank column A (which I make as narrow as possible), and then columns B and C as your index and row columns
+//     (Column A is there because you cannot group columns A + B)
+// To change the columns, update idxColumnNumber and rowColumnNumber
+
+// This is very simple, so you must hard code the sheets to look for, 
+// To install, open Extensions > Apps Script, paste code, save, and click `Run` to start the setUpTrigger. 
+
+ // Global Variables
+var sheetNamesMonitored = ["Headcount","Gantt Detail"]; // Sheet names to listen for new rows in
+var spreadSheetMonitored = '1O5lx8VxUZzM8OItv1fRRP1CdyNnZJNno_c8hiC6I9S4'; // Spreadsheet id (from the URL)
+var startingRowNumber = 5; // The row number where indeces start (likely to never be 1 as you will have some column header)
+var idxColumnNumber = 2; 
+var rowColumnNumber = 3; 
+
+function setUpTrigger() {
+  ScriptApp.newTrigger('on_insert')
+    .forSpreadsheet(spreadSheetMonitored)
+    .onChange() // onChange looks for changes to the structure of the sheet, not edits within a structure
+    .create();
+  
+  // Store the initial number of rows for each valid sheet below the startingRowNumber
+  var ss = SpreadsheetApp.openById(spreadSheetMonitored);
+  sheetNamesMonitored.forEach(function(sheetName) {
+    var sheet = ss.getSheetByName(sheetName);
+    if(sheet) {
+      var rowsBelowStartingRow = sheet.getLastRow() - startingRowNumber + 1;
+      PropertiesService.getScriptProperties().setProperty(sheetName, rowsBelowStartingRow.toString());
+    }
+  });
+}
+
+function on_insert(e) {
+  var sheet = e.source.getActiveSheet();
+  var sheetName = sheet.getName();
+
+  // Ignore edits to structure of other sheets and edits that are not row inserts
+  if (!sheetNamesMonitored.includes(sheetName)) return;
+  if (e.changeType !== 'INSERT_ROW') return;
+
+  // To figure out what item/index number(s) have been inserted, get the max that is currently there
+  var columnAValues = sheet.getRange(startingRowNumber, idxColumnNumber, sheet.getLastRow() - startingRowNumber + 1).getValues();
+  var maxItemNumber = getMaxFromColumnA(sheet, startingRowNumber);
+
+  // Add index numbers in column e
+  for (var i = 0; i < columnAValues.length; i++) {
+    if (columnAValues[i][0] === "" || columnAValues[i][0] === null) {
+      maxItemNumber++;
+      sheet.getRange(startingRowNumber + i, idxColumnNumber).setValue(maxItemNumber);
+  // Update Column B with row number (adjusted by startingRowNumber so that it starts at 1, not startingRowNumber)
+      sheet.getRange(startingRowNumber + i, rowColumnNumber).setValue(i + 1);
+    }
+  }
+  // for (var i = 0; i < columnAValues.length; i++) {
+  //   sheet.getRange(startingRowNumber + i, rowColumnNumber).setValue(i + 1);
+  // }
+}
+
+
+function getMaxFromColumnA(sheet, startRow) {
+  var columnA = sheet.getRange(startRow, idxColumnNumber, sheet.getLastRow() - startRow + 1).getValues();
+  var max = Math.max(...columnA.flat().filter(item => typeof item === "number"));
+  return max;
+}
+
