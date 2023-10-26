@@ -42,18 +42,17 @@ function on_insert(e) {
   var columnAValues = sheet.getRange(startingRowNumber, idxColumnNumber, sheet.getLastRow() - startingRowNumber + 1).getValues();
   var maxItemNumber = getMaxFromColumnA(sheet, startingRowNumber);
 
-  // Add index numbers in column e
+  // Add index numbers in column
   for (var i = 0; i < columnAValues.length; i++) {
     if (columnAValues[i][0] === "" || columnAValues[i][0] === null) {
       maxItemNumber++;
       sheet.getRange(startingRowNumber + i, idxColumnNumber).setValue(maxItemNumber);
-  // Update Column B with row number (adjusted by startingRowNumber so that it starts at 1, not startingRowNumber)
-      sheet.getRange(startingRowNumber + i, rowColumnNumber).setValue(i + 1);
     }
   }
-  // for (var i = 0; i < columnAValues.length; i++) {
-  //   sheet.getRange(startingRowNumber + i, rowColumnNumber).setValue(i + 1);
-  // }
+  // Update Column B with row number (adjusted by startingRowNumber so that it starts at 1, not startingRowNumber)
+  for (var i = 0; i < columnAValues.length; i++) {
+    sheet.getRange(startingRowNumber + i, rowColumnNumber).setValue(i + 1);
+  }
 }
 
 
